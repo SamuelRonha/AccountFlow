@@ -52,22 +52,19 @@ func TestCreateTransaction(t *testing.T) {
 		name    string
 		opID    int
 		opDesc  string
-		amount  float64
+		amount  float64 // caller always sends positive
 		wantErr error
-		wantAmt float64
+		wantAmt float64 // what gets stored (sign applied by domain)
 	}{
-		// Happy path — each op type with correct sign
-		{"normal purchase stores -50.0",       1, "Normal Purchase",            -50.0, nil, -50.0},
-		{"installments stores -23.5",          2, "Purchase with Installments", -23.5, nil, -23.5},
-		{"withdrawal stores -18.7",            3, "Withdrawal",                 -18.7, nil, -18.7},
-		{"credit voucher stores +60.0",        4, "Credit Voucher",             60.0,  nil, 60.0},
+		// Happy path — caller sends positive, domain applies sign
+		{"normal purchase 50 stored as -50", 1, "Normal Purchase", 50.0, nil, -50.0},
+		{"installments 23.5 stored as -23.5", 2, "Purchase with Installments", 23.5, nil, -23.5},
+		{"withdrawal 18.7 stored as -18.7", 3, "Withdrawal", 18.7, nil, -18.7},
+		{"credit voucher 60 stored as +60", 4, "Credit Voucher", 60.0, nil, 60.0},
 
-		// Wrong sign
-		{"debit with positive amount rejected", 1, "Normal Purchase",  50.0,  domain.ErrInvalidAmount, 0},
-		{"credit with negative amount rejected",4, "Credit Voucher",   -60.0, domain.ErrInvalidAmount, 0},
-
-		// Zero
+		// Invalid input
 		{"zero amount rejected", 1, "Normal Purchase", 0, domain.ErrInvalidAmount, 0},
+		{"negative amount rejected", 1, "Normal Purchase", -50.0, domain.ErrInvalidAmount, 0},
 	}
 
 	for _, tc := range signCases {
@@ -103,7 +100,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			&mocks.MockOperationTypeRepository{},
 		)
-		_, err := uc.CreateTransaction(context.Background(), uuid.New(), 1, -50.0)
+		_, err := uc.CreateTransaction(context.Background(), uuid.New(), 1, 50.0)
 		if err != domain.ErrAccountNotFound {
 			t.Errorf("got %v, want ErrAccountNotFound", err)
 		}
@@ -119,7 +116,7 @@ func TestCreateTransaction(t *testing.T) {
 				},
 			},
 		)
-		_, err := uc.CreateTransaction(context.Background(), accountID, 99, -50.0)
+		_, err := uc.CreateTransaction(context.Background(), accountID, 99, 50.0)
 		if err != domain.ErrOperationTypeNotFound {
 			t.Errorf("got %v, want ErrOperationTypeNotFound", err)
 		}

@@ -19,7 +19,7 @@ func NewTransactionHandler(uc *usecase.TransactionUseCase) *TransactionHandler {
 type createTransactionRequest struct {
 	AccountID       string  `json:"account_id" binding:"required"`
 	OperationTypeID int     `json:"operation_type_id" binding:"required,min=1"`
-	Amount          float64 `json:"amount" binding:"required,ne=0"`
+	Amount          float64 `json:"amount" binding:"required,gt=0"`
 }
 
 // Create godoc

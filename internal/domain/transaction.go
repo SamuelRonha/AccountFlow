@@ -19,22 +19,20 @@ type Transaction struct {
 	EventDate       time.Time `json:"event_date"`
 }
 
-// NewTransaction creates a transaction and validates that the amount sign is
-// consistent with the operation type:
-//   - Debit operations  (type 1, 2, 3) require a negative amount  (e.g. -50.0)
-//   - Credit operations (type 4)       require a positive amount  (e.g.  60.0)
+// NewTransaction creates a transaction from a caller-supplied positive amount.
+// The domain applies the correct sign automatically based on operation type:
+//   - Debit operations  (type 1, 2, 3) → amount is stored as negative (e.g. 50.0 → -50.0)
+//   - Credit operations (type 4)       → amount is stored as positive (e.g. 60.0 → +60.0)
 //
-// Returns ErrInvalidAmount if the amount is zero or the sign contradicts the
-// operation type.
+// The caller must always send a positive value. Returns ErrInvalidAmount if
+// the amount is zero or negative.
 func NewTransaction(accountID uuid.UUID, opType *OperationType, amount float64) (*Transaction, error) {
-	if amount == 0 {
+	if amount <= 0 {
 		return nil, ErrInvalidAmount
 	}
-	if opType.IsDebit() && amount > 0 {
-		return nil, ErrInvalidAmount // debit operations must be negative
-	}
-	if !opType.IsDebit() && amount < 0 {
-		return nil, ErrInvalidAmount // credit operations must be positive
+
+	if opType.IsDebit() {
+		amount = -amount
 	}
 
 	return &Transaction{

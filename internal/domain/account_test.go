@@ -43,32 +43,26 @@ func TestNewAccount(t *testing.T) {
 // ── Transaction ───────────────────────────────────────────────────────────────
 
 func TestNewTransaction_SignValidation(t *testing.T) {
-	// The caller is responsible for the sign; the domain validates it matches
-	// the operation type.
-	//
-	// Debit operations (type 1, 2, 3) → amount must be NEGATIVE
-	// Credit operations (type 4)      → amount must be POSITIVE
+	// The caller always sends a POSITIVE amount.
+	// The domain applies the sign automatically based on operation type:
+	//   Debit  (type 1, 2, 3) → stored as negative  (200 → -200)
+	//   Credit (type 4)       → stored as positive   (60  → +60)
 	cases := []struct {
-		name    string
-		opID    int
-		amount  float64
-		wantErr error
+		name       string
+		opID       int
+		amount     float64
+		wantErr    error
+		wantStored float64
 	}{
-		// ── happy path ─────────────────────────────────────────────────────
-		{"normal purchase with negative amount",       1, -50.0, nil},
-		{"installments with negative amount",          2, -23.5, nil},
-		{"withdrawal with negative amount",            3, -18.7, nil},
-		{"credit voucher with positive amount",        4, 60.0,  nil},
+		// ── happy path — caller sends positive ─────────────────────────────
+		{"normal purchase 50 stored as -50", 1, 50.0, nil, -50.0},
+		{"installments 23.5 stored as -23.5", 2, 23.5, nil, -23.5},
+		{"withdrawal 18.7 stored as -18.7", 3, 18.7, nil, -18.7},
+		{"credit voucher 60 stored as +60", 4, 60.0, nil, 60.0},
 
-		// ── wrong sign ─────────────────────────────────────────────────────
-		{"normal purchase with positive amount",       1, 50.0,  domain.ErrInvalidAmount},
-		{"installments with positive amount",          2, 23.5,  domain.ErrInvalidAmount},
-		{"withdrawal with positive amount",            3, 18.7,  domain.ErrInvalidAmount},
-		{"credit voucher with negative amount",        4, -60.0, domain.ErrInvalidAmount},
-
-		// ── zero ───────────────────────────────────────────────────────────
-		{"zero amount on debit op",  1, 0, domain.ErrInvalidAmount},
-		{"zero amount on credit op", 4, 0, domain.ErrInvalidAmount},
+		// ── invalid input ───────────────────────────────────────────────────
+		{"zero amount rejected", 1, 0, domain.ErrInvalidAmount, 0},
+		{"negative amount rejected", 1, -50.0, domain.ErrInvalidAmount, 0},
 	}
 
 	for _, tc := range cases {
@@ -79,8 +73,8 @@ func TestNewTransaction_SignValidation(t *testing.T) {
 			if err != tc.wantErr {
 				t.Fatalf("got error %v, want %v", err, tc.wantErr)
 			}
-			if err == nil && tx.Amount != tc.amount {
-				t.Errorf("got amount %f, want %f", tx.Amount, tc.amount)
+			if err == nil && tx.Amount != tc.wantStored {
+				t.Errorf("got stored amount %f, want %f", tx.Amount, tc.wantStored)
 			}
 		})
 	}
@@ -94,10 +88,10 @@ func TestOperationType_IsDebit(t *testing.T) {
 		desc    string
 		isDebit bool
 	}{
-		{1, "Normal Purchase",            true},
+		{1, "Normal Purchase", true},
 		{2, "Purchase with Installments", true},
-		{3, "Withdrawal",                 true},
-		{4, "Credit Voucher",             false},
+		{3, "Withdrawal", true},
+		{4, "Credit Voucher", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
