@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -61,5 +62,10 @@ func mapDomainError(err error) (int, string) {
 
 func writeError(c *gin.Context, err error) {
 	code, msg := mapDomainError(err)
+	if code == http.StatusInternalServerError {
+		log.Printf("[ERROR] %s %s → %v", c.Request.Method, c.Request.URL.Path, err)
+		c.JSON(code, gin.H{"error": "internal server error"})
+		return
+	}
 	c.JSON(code, gin.H{"error": msg})
 }
