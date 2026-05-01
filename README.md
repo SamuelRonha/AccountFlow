@@ -41,7 +41,7 @@ AccountFlow/
 │           ├── operation_type_repo.go         # OperationTypeRepository implementation
 │           └── transaction_repo.go            # TransactionRepository implementation
 ├── migrations/
-│   ├── 000001_create_users.up.sql             # Creates operation_types + seeds data
+│   ├── 000001_create_operation_types.up.sql             # Creates operation_types + seeds data
 │   ├── 000002_create_accounts.up.sql          # Creates accounts table
 │   └── 000003_create_transactions.up.sql      # Creates transactions table
 ├── Dockerfile
