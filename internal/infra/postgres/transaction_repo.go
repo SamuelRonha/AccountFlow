@@ -8,15 +8,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type transactionRepository struct {
+type TransactionRepository struct {
 	db *sql.DB
 }
 
-func NewTransactionRepository(db *sql.DB) *transactionRepository {
-	return &transactionRepository{db: db}
+func NewTransactionRepository(db *sql.DB) *TransactionRepository {
+	return &TransactionRepository{db: db}
 }
 
-func (r *transactionRepository) Create(ctx context.Context, tx *domain.Transaction) error {
+func (r *TransactionRepository) Create(ctx context.Context, tx *domain.Transaction) error {
 	query := `INSERT INTO transactions (transaction_id, account_id, operation_type_id, amount, event_date)
 	          VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query,
@@ -25,7 +25,7 @@ func (r *transactionRepository) Create(ctx context.Context, tx *domain.Transacti
 	return err
 }
 
-func (r *transactionRepository) FindByAccountID(ctx context.Context, accountID uuid.UUID) ([]domain.Transaction, error) {
+func (r *TransactionRepository) FindByAccountID(ctx context.Context, accountID uuid.UUID) ([]domain.Transaction, error) {
 	query := `SELECT transaction_id, account_id, operation_type_id, amount, event_date
 	          FROM transactions WHERE account_id = $1 ORDER BY event_date DESC`
 

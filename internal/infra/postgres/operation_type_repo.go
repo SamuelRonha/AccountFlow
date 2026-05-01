@@ -8,15 +8,15 @@ import (
 	"AccountFlow/internal/domain"
 )
 
-type operationTypeRepository struct {
+type OperationTypeRepository struct {
 	db *sql.DB
 }
 
-func NewOperationTypeRepository(db *sql.DB) *operationTypeRepository {
-	return &operationTypeRepository{db: db}
+func NewOperationTypeRepository(db *sql.DB) *OperationTypeRepository {
+	return &OperationTypeRepository{db: db}
 }
 
-func (r *operationTypeRepository) FindByID(ctx context.Context, id int) (*domain.OperationType, error) {
+func (r *OperationTypeRepository) FindByID(ctx context.Context, id int) (*domain.OperationType, error) {
 	query := `SELECT operation_type_id, description FROM operation_types WHERE operation_type_id = $1`
 	var op domain.OperationType
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&op.OperationTypeID, &op.Description)
@@ -28,4 +28,3 @@ func (r *operationTypeRepository) FindByID(ctx context.Context, id int) (*domain
 	}
 	return &op, nil
 }
-
