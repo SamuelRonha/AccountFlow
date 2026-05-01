@@ -1,0 +1,89 @@
+{
+  "info": {
+    "_postman_id": "3eec1d65-ff84-4318-8c35-6b26e2bbd610",
+    "name": "AccountFlow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "15931882"
+  },
+  "item": [
+    {
+      "name": "Post Transaction",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"account_id\": \"9a9dedd1-ffdb-46a4-a4d4-46bd8e9019c0\",\r\n    \"operation_type_id\": 4,\r\n    \"amount\": 300\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8072/api/v1/transactions",
+          "host": [
+            "localhost"
+          ],
+          "port": "8072",
+          "path": [
+            "api",
+            "v1",
+            "transactions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Account By Id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "localhost:8072/api/v1/accounts/9a9dedd1-ffdb-46a4-a4d4-46bd8e9019c0",
+          "host": [
+            "localhost"
+          ],
+          "port": "8072",
+          "path": [
+            "api",
+            "v1",
+            "accounts",
+            "9a9dedd1-ffdb-46a4-a4d4-46bd8e9019c0"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "New Account",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"document_number\": \"12345678903\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8072/api/v1/accounts",
+          "host": [
+            "localhost"
+          ],
+          "port": "8072",
+          "path": [
+            "api",
+            "v1",
+            "accounts"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

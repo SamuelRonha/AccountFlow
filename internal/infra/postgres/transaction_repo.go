@@ -33,7 +33,11 @@ func (r *TransactionRepository) FindByAccountID(ctx context.Context, accountID u
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			//log but not subscribe the main error :>
+		}
+	}()
 
 	var txs []domain.Transaction
 	for rows.Next() {

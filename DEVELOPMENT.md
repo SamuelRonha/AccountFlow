@@ -91,8 +91,8 @@ AccountFlow/
 |           |-- operation_type_repo.go
 |           `-- transaction_repo.go
 |-- migrations/
-|   |-- 000001_create_users.up.sql             # Creates operation_types + seeds 4 rows
-|   |-- 000001_create_users.down.sql
+|   |-- 000001_create_operation_types.up.sql  # Creates operation_types + seeds 4 rows
+|   |-- 000001_create_operation_types.down.sql
 |   |-- 000002_create_accounts.up.sql          # Creates accounts table
 |   |-- 000002_create_accounts.down.sql
 |   |-- 000003_create_transactions.up.sql      # Creates transactions table
