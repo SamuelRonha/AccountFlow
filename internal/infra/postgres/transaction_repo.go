@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"AccountFlow/internal/domain"
 	"github.com/google/uuid"
@@ -17,12 +18,44 @@ func NewTransactionRepository(db *sql.DB) *TransactionRepository {
 }
 
 func (r *TransactionRepository) Create(ctx context.Context, tx *domain.Transaction) error {
-	query := `INSERT INTO transactions (transaction_id, account_id, operation_type_id, amount, event_date)
-	          VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.ExecContext(ctx, query,
+	ts, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	isCommitted := false
+
+	defer func() {
+		if !isCommitted {
+			_ = ts.Rollback()
+		}
+	}()
+	var exists int
+	queryLock := `SELECT 1 FROM accounts WHERE account_id = $1 FOR UPDATE`
+
+	err = ts.QueryRowContext(ctx, queryLock, tx.AccountID).Scan(&exists)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrAccountNotFound
+		}
+		return err
+	}
+
+	_, err = ts.ExecContext(ctx,
+		`INSERT INTO transactions (transaction_id, account_id, operation_type_id, amount, event_date)
+         VALUES ($1, $2, $3, $4, $5)`,
 		tx.TransactionID, tx.AccountID, tx.OperationTypeID, tx.Amount, tx.EventDate,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if err = ts.Commit(); err != nil {
+		return err
+	}
+	isCommitted = true
+
+	return nil
 }
 
 func (r *TransactionRepository) FindByAccountID(ctx context.Context, accountID uuid.UUID) ([]domain.Transaction, error) {
