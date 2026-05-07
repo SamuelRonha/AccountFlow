@@ -47,6 +47,8 @@ func mapDomainError(err error) (int, string) {
 	switch {
 	case errors.Is(err, domain.ErrAccountNotFound):
 		return http.StatusNotFound, "account not found"
+	case errors.Is(err, domain.ErrToAccountNotFound):
+		return http.StatusNotFound, "to account not found"
 	case errors.Is(err, domain.ErrDocumentAlreadyUsed):
 		return http.StatusConflict, "document already registered"
 	case errors.Is(err, domain.ErrOperationTypeNotFound):
@@ -55,6 +57,8 @@ func mapDomainError(err error) (int, string) {
 		return http.StatusBadRequest, "amount must not be zero"
 	case errors.Is(err, domain.ErrInvalidField):
 		return http.StatusBadRequest, "one or more fields are invalid"
+	case errors.Is(err, domain.ErrInsufficientFunds):
+		return http.StatusBadRequest, "insufficient funds"
 	default:
 		return http.StatusInternalServerError, "internal server error"
 	}

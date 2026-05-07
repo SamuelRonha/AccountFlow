@@ -33,7 +33,9 @@ func (r *AccountRepository) Create(ctx context.Context, account *domain.Account)
 }
 
 func (r *AccountRepository) FindByID(ctx context.Context, accountID uuid.UUID) (*domain.Account, error) {
+
 	query := `SELECT account_id, document_number, created_at FROM accounts WHERE account_id = $1`
+
 	var a domain.Account
 	err := r.db.QueryRowContext(ctx, query, accountID).Scan(&a.AccountID, &a.DocumentNumber, &a.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -43,4 +45,16 @@ func (r *AccountRepository) FindByID(ctx context.Context, accountID uuid.UUID) (
 		return nil, err
 	}
 	return &a, nil
+}
+
+func (r *AccountRepository) FindByIDForUpdate(ctx context.Context, tx *sql.Tx, accountID uuid.UUID) bool {
+	query := `select 1 FROM accounts WHERE account_id = $1 for update`
+	exists := 0
+	err := tx.QueryRowContext(ctx, query, accountID).Scan(&exists)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+
+	return exists == 1
 }

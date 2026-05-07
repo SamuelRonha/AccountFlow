@@ -12,9 +12,17 @@ type OperationType struct {
 	Description     string `json:"description"`
 }
 
+const CREDIT_VOUCHER_ID = 4
+
 // IsDebit returns true when the operation should produce a negative amount.
 // All types except Credit Voucher (4) are debit operations.
 func (o *OperationType) IsDebit() bool {
-	return o.OperationTypeID != 4
+	return o.OperationTypeID != CREDIT_VOUCHER_ID
 }
 
+func NewOperationType(id int, desc string) *OperationType {
+	return &OperationType{
+		OperationTypeID: id,
+		Description:     desc,
+	}
+}

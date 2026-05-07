@@ -24,3 +24,10 @@ func NewAccount(documentNumber string) (*Account, error) {
 		CreatedAt:      time.Now().UTC(),
 	}, nil
 }
+
+type AccountResponse struct {
+	AccountID      uuid.UUID `json:"account_id"`
+	DocumentNumber string    `json:"document_number"`
+	CreatedAt      time.Time `json:"created_at"`
+	Balance        float64   `json:"balance"`
+}

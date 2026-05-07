@@ -10,10 +10,11 @@ import (
 
 type AccountUseCase struct {
 	accountRepo repository.AccountRepository
+	txRepo      repository.TransactionRepository
 }
 
-func NewAccountUseCase(accountRepo repository.AccountRepository) *AccountUseCase {
-	return &AccountUseCase{accountRepo: accountRepo}
+func NewAccountUseCase(accountRepo repository.AccountRepository, txRepo repository.TransactionRepository) *AccountUseCase {
+	return &AccountUseCase{accountRepo: accountRepo, txRepo: txRepo}
 }
 
 // CreateAccount opens a new account for the given document number.
@@ -32,6 +33,19 @@ func (uc *AccountUseCase) CreateAccount(ctx context.Context, documentNumber stri
 }
 
 // GetByID retrieves an account by its ID.
-func (uc *AccountUseCase) GetByID(ctx context.Context, accountID uuid.UUID) (*domain.Account, error) {
-	return uc.accountRepo.FindByID(ctx, accountID)
+func (uc *AccountUseCase) GetByID(ctx context.Context, accountID uuid.UUID) (*domain.AccountResponse, error) {
+	acc, err := uc.accountRepo.FindByID(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	balance, err := uc.txRepo.GetBalance(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	return &domain.AccountResponse{
+		AccountID:      acc.AccountID,
+		DocumentNumber: acc.DocumentNumber,
+		CreatedAt:      acc.CreatedAt,
+		Balance:        balance,
+	}, nil
 }

@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"AccountFlow/internal/domain"
@@ -43,9 +44,11 @@ func (m *MockAccountRepository) FindByID(ctx context.Context, accountID uuid.UUI
 // MockTransactionRepository is a test double for repository.TransactionRepository.
 type MockTransactionRepository struct {
 	CreateFn          func(ctx context.Context, tx *domain.Transaction) error
+	CreateWithTxFn    func(ctx context.Context, sqlTx *sql.Tx, tx *domain.Transaction) error
 	FindByAccountIDFn func(ctx context.Context, accountID uuid.UUID) ([]domain.Transaction, error)
 
 	CreateCalls          int
+	CreateWithTxCalls    int
 	FindByAccountIDCalls int
 }
 
@@ -55,6 +58,14 @@ func (m *MockTransactionRepository) Create(ctx context.Context, tx *domain.Trans
 		panic(fmt.Sprintf("MockTransactionRepository.Create called but CreateFn is not set (call #%d)", m.CreateCalls))
 	}
 	return m.CreateFn(ctx, tx)
+}
+
+func (m *MockTransactionRepository) CreateWithTx(ctx context.Context, sqlTx *sql.Tx, tx *domain.Transaction) error {
+	m.CreateWithTxCalls++
+	if m.CreateWithTxFn == nil {
+		panic(fmt.Sprintf("MockTransactionRepository.CreateWithTx called but CreateWithTxFn is not set (call #%d)", m.CreateWithTxCalls))
+	}
+	return m.CreateWithTxFn(ctx, sqlTx, tx)
 }
 
 func (m *MockTransactionRepository) FindByAccountID(ctx context.Context, accountID uuid.UUID) ([]domain.Transaction, error) {

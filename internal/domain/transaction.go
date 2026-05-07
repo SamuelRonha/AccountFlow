@@ -17,6 +17,7 @@ type Transaction struct {
 	OperationTypeID int       `json:"operation_type_id"`
 	Amount          float64   `json:"amount"`
 	EventDate       time.Time `json:"event_date"`
+	IdTransfer      *string   `json:"id_transfer"`
 }
 
 // NewTransaction creates a transaction from a caller-supplied positive amount.
@@ -26,7 +27,7 @@ type Transaction struct {
 //
 // The caller must always send a positive value. Returns ErrInvalidAmount if
 // the amount is zero or negative.
-func NewTransaction(accountID uuid.UUID, opType *OperationType, amount float64) (*Transaction, error) {
+func NewTransaction(accountID uuid.UUID, opType *OperationType, amount float64, transferID *string) (*Transaction, error) {
 	if amount <= 0 {
 		return nil, ErrInvalidAmount
 	}
@@ -41,5 +42,6 @@ func NewTransaction(accountID uuid.UUID, opType *OperationType, amount float64) 
 		OperationTypeID: opType.OperationTypeID,
 		Amount:          amount,
 		EventDate:       time.Now().UTC(),
+		IdTransfer:      transferID,
 	}, nil
 }

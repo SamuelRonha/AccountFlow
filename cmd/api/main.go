@@ -44,7 +44,7 @@ func main() {
 	opTypeRepo := postgres.NewOperationTypeRepository(db)
 
 	// Use cases
-	accountUC := usecase.NewAccountUseCase(accountRepo)
+	accountUC := usecase.NewAccountUseCase(accountRepo, txRepo)
 	transactionUC := usecase.NewTransactionUseCase(txRepo, accountRepo, opTypeRepo)
 
 	// Handlers

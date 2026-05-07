@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS transactions (
     account_id        UUID          NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
     operation_type_id INT           NOT NULL REFERENCES operation_types(operation_type_id),
     amount            NUMERIC(15,2) NOT NULL,
-    event_date        TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+    event_date        TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    transfer_id text null
 );
 
 CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id);
+create unique index if not exists idx_transactions_account_id_transfer_id on transactions(account_id, transfer_id) where transfer_id is not null;

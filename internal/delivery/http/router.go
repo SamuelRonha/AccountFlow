@@ -21,9 +21,9 @@ func NewRouter(
 			"version": "2.0.0",
 			"status":  "running",
 			"routes": gin.H{
-				"POST /api/v1/accounts":              "create account",
-				"GET  /api/v1/accounts/:accountId":   "get account by id",
-				"POST /api/v1/transactions":          "create transaction",
+				"POST /api/v1/accounts":            "create account",
+				"GET  /api/v1/accounts/:accountId": "get account by id",
+				"POST /api/v1/transactions":        "create transaction",
 			},
 		})
 	})
@@ -33,6 +33,7 @@ func NewRouter(
 		v1.POST("/accounts", accountHandler.Create)
 		v1.GET("/accounts/:accountId", accountHandler.GetByID)
 		v1.POST("/transactions", transactionHandler.Create)
+		v1.PUT("/transfer", transactionHandler.TransferBetweenAccounts)
 	}
 
 	return r
