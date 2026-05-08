@@ -55,6 +55,12 @@ func mapDomainError(err error) (int, string) {
 		return http.StatusBadRequest, "amount must not be zero"
 	case errors.Is(err, domain.ErrInvalidField):
 		return http.StatusBadRequest, "one or more fields are invalid"
+	case errors.Is(err, domain.ErrInvalidFieldAmount):
+		return http.StatusBadRequest, "amount must be a valid number"
+	case errors.Is(err, domain.ErrInvalidBalance):
+		return http.StatusBadRequest, "balance must not be negative"
+	case errors.Is(err, domain.ErrInsufficientBalance):
+		return http.StatusBadRequest, "insufficient balance"
 	default:
 		return http.StatusInternalServerError, "internal server error"
 	}

@@ -17,7 +17,8 @@ func NewAccountHandler(uc *usecase.AccountUseCase) *AccountHandler {
 }
 
 type createAccountRequest struct {
-	DocumentNumber string `json:"document_number" binding:"required"`
+	DocumentNumber string  `json:"document_number" binding:"required"`
+	Balance        float64 `json:"balance"`
 }
 
 // Create godoc
@@ -29,7 +30,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		return
 	}
 
-	account, err := h.uc.CreateAccount(c.Request.Context(), req.DocumentNumber)
+	account, err := h.uc.CreateAccount(c.Request.Context(), req.DocumentNumber, req.Balance)
 	if err != nil {
 		writeError(c, err)
 		return

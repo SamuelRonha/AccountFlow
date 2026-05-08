@@ -11,7 +11,7 @@ import (
 
 func TestNewAccount(t *testing.T) {
 	t.Run("valid document creates account", func(t *testing.T) {
-		acc, err := domain.NewAccount("12345678900")
+		acc, err := domain.NewAccount("12345678900", 100.0)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -32,7 +32,7 @@ func TestNewAccount(t *testing.T) {
 	}
 	for _, tc := range invalidCases {
 		t.Run("rejects "+tc.name, func(t *testing.T) {
-			_, err := domain.NewAccount(tc.document)
+			_, err := domain.NewAccount(tc.document, 100.0)
 			if err != domain.ErrInvalidField {
 				t.Errorf("got %v, want ErrInvalidField", err)
 			}

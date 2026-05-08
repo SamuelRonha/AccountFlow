@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"AccountFlow/internal/domain"
@@ -20,10 +21,11 @@ func transactionUC(
 	return usecase.NewTransactionUseCase(txRepo, accountRepo, opTypeRepo)
 }
 
-func stubAccount(id uuid.UUID) *mocks.MockAccountRepository {
+// stubAccount returns an account mock whose UpdateBalance always succeeds.
+func stubAccount() *mocks.MockAccountRepository {
 	return &mocks.MockAccountRepository{
-		FindByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Account, error) {
-			return &domain.Account{AccountID: id, DocumentNumber: "12345678900"}, nil
+		UpdateBalanceFn: func(_ context.Context, _ *sql.Tx, _ uuid.UUID, _ float64) error {
+			return nil
 		},
 	}
 }
@@ -36,9 +38,10 @@ func stubOpType(id int, desc string) *mocks.MockOperationTypeRepository {
 	}
 }
 
-func stubTxCreate() *mocks.MockTransactionRepository {
+func stubTxRepo() *mocks.MockTransactionRepository {
 	return &mocks.MockTransactionRepository{
-		CreateFn: func(_ context.Context, _ *domain.Transaction) error { return nil },
+		// BeginTxFn intentionally unset — mock returns nil tx (no-op commit/rollback in usecase).
+		CreateTxFn: func(_ context.Context, _ *sql.Tx, _ *domain.Transaction) error { return nil },
 	}
 }
 
@@ -49,28 +52,37 @@ func TestCreateTransaction(t *testing.T) {
 
 	// ── sign/amount validation (table-driven) ─────────────────────────────
 	signCases := []struct {
-		name    string
-		opID    int
-		opDesc  string
-		amount  float64 // caller always sends positive
-		wantErr error
-		wantAmt float64 // what gets stored (sign applied by domain)
+		name         string
+		opID         int
+		opDesc       string
+		updateBalErr error   // what UpdateBalance mock returns
+		amount       float64 // caller always sends positive
+		wantErr      error
+		wantAmt      float64 // what gets stored (sign applied by domain)
 	}{
 		// Happy path — caller sends positive, domain applies sign
-		{"normal purchase 50 stored as -50", 1, "Normal Purchase", 50.0, nil, -50.0},
-		{"installments 23.5 stored as -23.5", 2, "Purchase with Installments", 23.5, nil, -23.5},
-		{"withdrawal 18.7 stored as -18.7", 3, "Withdrawal", 18.7, nil, -18.7},
-		{"credit voucher 60 stored as +60", 4, "Credit Voucher", 60.0, nil, 60.0},
+		{"normal purchase 50 stored as -50", 1, "Normal Purchase", nil, 50.0, nil, -50.0},
+		{"installments 23.5 stored as -23.5", 2, "Purchase with Installments", nil, 23.5, nil, -23.5},
+		{"withdrawal 18.7 stored as -18.7", 3, "Withdrawal", nil, 18.7, nil, -18.7},
+		{"credit voucher 60 stored as +60", 4, "Credit Voucher", nil, 60.0, nil, 60.0},
 
-		// Invalid input
-		{"zero amount rejected", 1, "Normal Purchase", 0, domain.ErrInvalidAmount, 0},
-		{"negative amount rejected", 1, "Normal Purchase", -50.0, domain.ErrInvalidAmount, 0},
+		// Invalid input (rejected before hitting the DB)
+		{"zero amount rejected", 1, "Normal Purchase", nil, 0, domain.ErrInvalidAmount, 0},
+		{"negative amount rejected", 1, "Normal Purchase", nil, -50.0, domain.ErrInvalidAmount, 0},
+
+		// DB-enforced balance guard
+		{"insufficient balance rejected", 1, "Normal Purchase", domain.ErrInsufficientBalance, 50.0, domain.ErrInsufficientBalance, 0},
 	}
 
 	for _, tc := range signCases {
 		t.Run(tc.name, func(t *testing.T) {
-			txRepo := stubTxCreate()
-			uc := transactionUC(txRepo, stubAccount(accountID), stubOpType(tc.opID, tc.opDesc))
+			txRepo := stubTxRepo()
+			accountRepo := &mocks.MockAccountRepository{
+				UpdateBalanceFn: func(_ context.Context, _ *sql.Tx, _ uuid.UUID, _ float64) error {
+					return tc.updateBalErr
+				},
+			}
+			uc := transactionUC(txRepo, accountRepo, stubOpType(tc.opID, tc.opDesc))
 
 			tx, err := uc.CreateTransaction(context.Background(), accountID, tc.opID, tc.amount)
 
@@ -81,8 +93,8 @@ func TestCreateTransaction(t *testing.T) {
 				if tx.Amount != tc.wantAmt {
 					t.Errorf("got amount %f, want %f", tx.Amount, tc.wantAmt)
 				}
-				if txRepo.CreateCalls != 1 {
-					t.Errorf("Create called %d times, want 1", txRepo.CreateCalls)
+				if txRepo.CreateTxCalls != 1 {
+					t.Errorf("CreateTx called %d times, want 1", txRepo.CreateTxCalls)
 				}
 			}
 		})
@@ -92,13 +104,13 @@ func TestCreateTransaction(t *testing.T) {
 
 	t.Run("error — account not found", func(t *testing.T) {
 		uc := transactionUC(
-			&mocks.MockTransactionRepository{},
+			stubTxRepo(),
 			&mocks.MockAccountRepository{
-				FindByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Account, error) {
-					return nil, domain.ErrAccountNotFound
+				UpdateBalanceFn: func(_ context.Context, _ *sql.Tx, _ uuid.UUID, _ float64) error {
+					return domain.ErrAccountNotFound
 				},
 			},
-			&mocks.MockOperationTypeRepository{},
+			stubOpType(1, "Normal Purchase"),
 		)
 		_, err := uc.CreateTransaction(context.Background(), uuid.New(), 1, 50.0)
 		if err != domain.ErrAccountNotFound {
@@ -108,8 +120,8 @@ func TestCreateTransaction(t *testing.T) {
 
 	t.Run("error — operation type not found", func(t *testing.T) {
 		uc := transactionUC(
-			&mocks.MockTransactionRepository{},
-			stubAccount(accountID),
+			stubTxRepo(),
+			stubAccount(),
 			&mocks.MockOperationTypeRepository{
 				FindByIDFn: func(_ context.Context, _ int) (*domain.OperationType, error) {
 					return nil, domain.ErrOperationTypeNotFound

@@ -16,10 +16,24 @@ func NewTransactionRepository(db *sql.DB) *TransactionRepository {
 	return &TransactionRepository{db: db}
 }
 
+func (r *TransactionRepository) BeginTx(ctx context.Context) (*sql.Tx, error) {
+	return r.db.BeginTx(ctx, nil)
+}
+
 func (r *TransactionRepository) Create(ctx context.Context, tx *domain.Transaction) error {
 	query := `INSERT INTO transactions (transaction_id, account_id, operation_type_id, amount, event_date)
 	          VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query,
+		tx.TransactionID, tx.AccountID, tx.OperationTypeID, tx.Amount, tx.EventDate,
+	)
+	return err
+}
+
+// CreateTx inserts a transaction record within the given database transaction.
+func (r *TransactionRepository) CreateTx(ctx context.Context, dbTx *sql.Tx, tx *domain.Transaction) error {
+	query := `INSERT INTO transactions (transaction_id, account_id, operation_type_id, amount, event_date)
+	          VALUES ($1, $2, $3, $4, $5)`
+	_, err := dbTx.ExecContext(ctx, query,
 		tx.TransactionID, tx.AccountID, tx.OperationTypeID, tx.Amount, tx.EventDate,
 	)
 	return err
@@ -34,9 +48,7 @@ func (r *TransactionRepository) FindByAccountID(ctx context.Context, accountID u
 		return nil, err
 	}
 	defer func() {
-		if err := rows.Close(); err != nil {
-			//log but not subscribe the main error :>
-		}
+		_ = rows.Close()
 	}()
 
 	var txs []domain.Transaction

@@ -23,7 +23,7 @@ func TestCreateAccount(t *testing.T) {
 		repo := &mocks.MockAccountRepository{
 			CreateFn: func(_ context.Context, _ *domain.Account) error { return nil },
 		}
-		acc, err := accountUC(repo).CreateAccount(context.Background(), "12345678900")
+		acc, err := accountUC(repo).CreateAccount(context.Background(), "12345678900", 100.0)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -40,7 +40,7 @@ func TestCreateAccount(t *testing.T) {
 
 	t.Run("error — empty document (rejected before hitting repo)", func(t *testing.T) {
 		repo := &mocks.MockAccountRepository{} // CreateFn intentionally unset
-		_, err := accountUC(repo).CreateAccount(context.Background(), "")
+		_, err := accountUC(repo).CreateAccount(context.Background(), "", 100.0)
 		if err != domain.ErrInvalidField {
 			t.Errorf("got %v, want ErrInvalidField", err)
 		}
@@ -55,7 +55,7 @@ func TestCreateAccount(t *testing.T) {
 				return domain.ErrDocumentAlreadyUsed
 			},
 		}
-		_, err := accountUC(repo).CreateAccount(context.Background(), "12345678900")
+		_, err := accountUC(repo).CreateAccount(context.Background(), "12345678900", 100.0)
 		if err != domain.ErrDocumentAlreadyUsed {
 			t.Errorf("got %v, want ErrDocumentAlreadyUsed", err)
 		}

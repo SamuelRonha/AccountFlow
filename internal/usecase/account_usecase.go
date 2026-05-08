@@ -18,8 +18,8 @@ func NewAccountUseCase(accountRepo repository.AccountRepository) *AccountUseCase
 
 // CreateAccount opens a new account for the given document number.
 // Returns ErrDocumentAlreadyUsed if the document is already registered.
-func (uc *AccountUseCase) CreateAccount(ctx context.Context, documentNumber string) (*domain.Account, error) {
-	account, err := domain.NewAccount(documentNumber)
+func (uc *AccountUseCase) CreateAccount(ctx context.Context, documentNumber string, balance float64) (*domain.Account, error) {
+	account, err := domain.NewAccount(documentNumber, balance)
 	if err != nil {
 		return nil, err
 	}
